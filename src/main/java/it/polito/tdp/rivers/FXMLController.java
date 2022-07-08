@@ -8,6 +8,8 @@ import java.net.URL;
 import java.util.ResourceBundle;
 
 import it.polito.tdp.rivers.model.Model;
+import it.polito.tdp.rivers.model.River;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
@@ -25,7 +27,7 @@ public class FXMLController {
     private URL location;
 
     @FXML // fx:id="boxRiver"
-    private ComboBox<?> boxRiver; // Value injected by FXMLLoader
+    private ComboBox<River> boxRiver; // Value injected by FXMLLoader
 
     @FXML // fx:id="txtStartDate"
     private TextField txtStartDate; // Value injected by FXMLLoader
@@ -48,6 +50,45 @@ public class FXMLController {
     @FXML // fx:id="txtResult"
     private TextArea txtResult; // Value injected by FXMLLoader
 
+    @FXML
+    void setData(ActionEvent event) {
+    	River riverScelto = this.boxRiver.getValue();
+    	if(riverScelto != null) {
+	    	this.txtStartDate.setText(this.model.getFirstDate(riverScelto).toString());
+	    	this.txtEndDate.setText(this.model.getLastDate(riverScelto).toString());
+	    	this.txtFMed.setText(String.format("%.3f",this.model.getFMedio(riverScelto)));
+	    	this.txtNumMeasurements.setText("" + this.model.getNMisurazioni(riverScelto));
+	    	// this.txtNumMeasurements.setText(String.valueOf(this.model.getNMisurazioni(riverScelto)));
+    	}
+    }
+    
+    @FXML
+    void simula(ActionEvent event) {
+    	txtResult.clear();
+    	River riverScelto = this.boxRiver.getValue();
+    	if(riverScelto != null) {
+    		String fattoreS = this.txtK.getText();
+    		try {
+    			double fattore = Double.parseDouble(fattoreS);
+    			if(fattore > 0) {
+    				this.model.simulate(riverScelto, fattore);
+    				txtResult.appendText("# giorni carenza = " + this.model.getGiorniCarenza() + "\n");
+    				txtResult.appendText("# occupazione media = " + String.format("%.3f", this.model.getOccupazioneMedia()));
+    				txtResult.setText("Simulazione terminata!\n");
+    			} else {
+    				txtResult.setText("Il fattore di scala deve essere un numero maggiore di 0");
+    				return;
+    			}
+    		} catch(NumberFormatException nfe) {
+    			txtResult.setText("Il fattore di scala (k) deve essere un numero positivo. Non stringhe");
+    			return;
+    		}
+    	} else {
+    		txtResult.appendText("Selezionare un river dal menu' a tendina");
+    		return;
+    	}
+    }
+    
     @FXML // This method is called by the FXMLLoader when initialization is complete
     void initialize() {
         assert boxRiver != null : "fx:id=\"boxRiver\" was not injected: check your FXML file 'Scene.fxml'.";
@@ -62,5 +103,7 @@ public class FXMLController {
     
     public void setModel(Model model) {
     	this.model = model;
+    	
+    	this.boxRiver.getItems().addAll(this.model.getAllRivers());
     }
 }
